@@ -1,0 +1,51 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Apr 14 21:11:02 2021
+
+@author: SAM
+"""
+
+import numpy as np
+import pandas as pd
+import os, glob
+import matplotlib.pyplot as plt
+import scipy as sp
+import scipy.fftpack
+
+# file_path = r'D:\DATA C\Desktop\Stations_data\Bansathi\Bansathi_all_months_copy'
+file_path = r'D:\DATA C\Desktop\Stations_data\Bani\all_months_copy'
+os.chdir(file_path)
+
+df = pd.read_csv('08_October_2020.csv', sep = ',')
+# df = pd.read_csv('08_Bans_October_2020.csv', sep = ',') #arse_dates = 'date')
+
+df['date'] = pd.to_datetime(df.date, format = '%d.%m.%Y %H:%M:%S')
+df.set_index('date', inplace = True)
+df_1hr = df.resample('60min').mean()
+print(df)
+
+date_mask = (df_1hr.index > '2020-10-01') & (df_1hr.index <= '2020-10-31')
+sensor1 = df_1hr['S1SM'].loc[date_mask]
+# plt.plot(df.index, df.S1SM)
+
+# SoilMoi = df.S1SM.values
+# n = df.index.size
+# # print(SoilMoisture)
+# period = 24
+# print(period)
+
+date = sensor1.index
+soilmoisture = sensor1.values
+N = len(soilmoisture)
+
+#you have to adjust timing here:
+soilmoisture_fft = sp.fftpack.fft(soilmoisture)
+soilmoisture_psd = np.abs(soilmoisture_fft)**2
+fftfreq = sp.fftpack.fftfreq(len(soilmoisture_psd), 1)
+i = fftfreq > 0
+fig, ax = plt.subplots(1, 1, figsize=(8, 4))
+ax.plot(fftfreq[i], 10 * np.log10(soilmoisture_psd[i]))
+# ax.set_xlim(0, 5)
+ax.set_xlabel('Frequency (1/year)')
+ax.set_ylabel('PSD (dB)')
+print(soilmoisture_fft)
